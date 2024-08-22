@@ -19,54 +19,54 @@ pub struct ChatCompletionRequest {
     /// 响应内容是否流式返回
     /// false：模型生成完所有内容后一次性返回结果
     /// true：按 SSE 协议逐块返回模型生成内容，并以一条 data: [DONE] 消息结束
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
     ///流式响应的选项。仅当 stream: true 时可以设置 stream_options 参数。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     stream_options: Option<StreamOptionsParam>,
     /// 模型可以生成的最大 token 数量。取值范围为 [0, 4096]。输入 token 和输出 token 的总长度还受模型的上下文长度限制。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     max_tokens: Option<usize>,
     /// 模型遇到 stop 字段所指定的字符串时将停止继续生成，这个词语本身不会输出。最多支持 4 个字符串。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     stop: Option<Vec<String>>,
     /// 频率惩罚系数。如果值为正，会根据新 token 在文本中的出现频率对其进行惩罚，从而降低模型逐字重复的可能性。取值范围为 [-2.0, 2.0]。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     frequency_penalty: Option<f32>,
     /// 采样温度。控制了生成文本时对每个候选词的概率分布进行平滑的程度。取值范围为 [0, 1]。当取值为 0 时模型仅考虑对数概率最大的一个 token。
     /// 较高的值（如 0.8）会使输出更加随机，而较低的值（如 0.2）会使输出更加集中确定。通常建议仅调整 temperature 或 top_p 其中之一，不建议两者都修改。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
     /// 核采样概率阈值。模型会考虑概率质量在 top_p 内的 token 结果。取值范围为 [0, 1]。当取值为 0 时模型仅考虑对数概率最大的一个 token。
     /// 如 0.1 意味着只考虑概率质量最高的前 10% 的 token，取值越大生成的随机性越高，取值越低生成的确定性越高。通常建议仅调整 temperature 或 top_p 其中之一，不建议两者都修改。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f32>,
     /// 是否返回输出 tokens 的对数概率。
     /// false：不返回对数概率信息
     /// true：返回消息内容中每个输出 token 的对数概率
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     logprobs: Option<bool>,
     /// 指定每个输出 token 位置最有可能返回的 token 数量，每个 token 都有关联的对数概率。
     /// 仅当 logprobs: true 时可以设置 top_logprobs 参数，取值范围为 [0, 20]。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     top_logprobs: Option<i32>,
     /// 调整指定 token 在模型输出内容中出现的概率，使模型生成的内容更加符合特定的偏好。
     /// logit_bias 字段接受一个 map 值，其中每个键为词表中的 token ID（使用 tokenization 接口获取），每个值为该 token 的偏差值，取值范围为 [-100, 100]。
     /// -1 会减少选择的可能性，1 会增加选择的可能性；-100 会完全禁止选择该 token，100 会导致仅可选择该 token。该参数的实际效果可能因模型而异。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     logit_bias: Option<HashMap<String, i32>>,
     /// 模型可以调用的工具列表。目前，仅函数作为工具被支持。用这个来提供模型可能为其生成 JSON 输入的函数列表。
-    #[builder(setter(strip_option))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     tools: Option<Vec<ToolParam>>,
 }
@@ -209,7 +209,7 @@ mod tests {
 
         let json = serde_json::to_string(&request).unwrap();
         println!("json: {}", json);
-        assert_eq!(json, r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"\u4f60\u597d"},{"role":"user","content":"\u4f60\u662f\u4e00\u4e2a\u4e2d\u800\u4e2a\u4e2d"}],"stream":false}"#);
+        assert_eq!(json, r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"你好"},{"role":"user","content":"你是谁"}]}"#);
     }
 
 }

@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
+use tracing::info;
 /// https://www.volcengine.com/docs/82379/1298454#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84
 
 #[derive(Serialize, Clone, Debug, Builder)]
@@ -175,6 +175,7 @@ pub struct ToolMessage {
 impl IntoRequest for ChatCompletionRequest {
     fn into_request(self, base_url: &str, client: Client) -> RequestBuilder {
         let url = format!("{}/chat/completions", base_url);
+        info!("url:{}", url);
         client.post(url).json(&self)
     }
 }
@@ -184,14 +185,111 @@ impl IntoRequest for ChatCompletionRequest {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChatCompletionResponse {
-
+    /// 本次请求的唯一标识
+    id: String,
+    /// 本次请求实际使用的模型名称和版本	
+    model: String,
+    /// 固定为 chat.completion(非流式)，固定为 chat.completion.chunk（流式）
+    object: String,
+    /// 本次请求创建时间的 Unix 时间戳（秒）
+    created: i64,
+    /// 本次请求的模型输出内容
+    choices: Vec<ChatCompletionChoice>,
+    /// 本次请求的 tokens 用量
+    usage: ChatCompletionUsage,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChatCompletionChoice {
+    /// 当前元素在 choices 列表的索引
+    index: usize,
+    /// 模型停止生成 token 的原因。可能的值包括：
+    /// stop：模型输出自然结束，或因命中请求参数 stop 中指定的字段而被截断
+    /// length：模型输出因达到请求参数 max_token 指定的最大 token 数量而被截断
+    /// content_filter：模型输出被内容审核拦截
+    /// tool_calls：模型调用了工具
+    finish_reason: String,
+    /// 模型输出的内容
+    message: Message,
+    /// 当前内容的对数概率信息
+    logprobs: Option<ChoiceLogprobs>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Message {
+    /// 固定为 assistant
+    role: String,
+    /// 模型生成的消息内容，content 与 tool_calls 字段二者至少有一个为非空
+    content: Option<String>,
+    /// 模型生成的消息内容，content 与 tool_calls 字段二者至少有一个为非空
+    tool_calls: Option<Vec<MessageToolCall>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MessageToolCall {
+    /// 当前工具调用 ID
+    id: String,
+    /// 工具类型，当前仅支持function
+    r#type: String,
+    /// 当前工具调用参数
+    function: Function,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Function {
+    /// 模型需要调用的函数名称
+    name: String,
+    /// 模型生成的用于调用函数的参数，JSON 格式。请注意，模型并不总是生成有效的 JSON，并且可能会虚构出一些您的函数参数规范中未定义的参数。在调用函数之前，请在您的代码中验证这些参数是否有效。
+    arguments: String,
+}
+
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChoiceLogprobs {
+    /// message列表中每个 content 元素中的 token 对数概率信息
+    content: Vec<TokenLogprob>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TokenLogprob {
+    /// 当前 token
+    token: String,
+    /// 当前 token 的 UTF-8 值，格式为整数列表。当一个字符由多个 token 组成（表情符号或特殊字符等）时可以用于字符的编码和解码。如果 token 没有 UTF-8 值则为空。
+    bytes: Vec<usize>,
+    /// 当前 token 的对数概率
+    logprob: f32,
+    /// 在当前 token 位置最有可能的标记及其对数概率的列表。在一些情况下，返回的数量可能比请求参数 top_logprobs 指定的数量要少。
+    top_logprobs: Option<Vec<TopLogprob>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TopLogprob {
+    /// 当前 token
+    token: String,
+    /// 当前 token 的 UTF-8 值，格式为整数列表。当一个字符由多个 token 组成（表情符号或特殊字符等）时可以用于字符的编码和解码。如果 token 没有 UTF-8 值则为空。
+    bytes: Vec<usize>,
+    /// 当前 token 的对数概率	
+    logprob: f32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChatCompletionUsage {
+    /// 输入的 prompt token 数量
+    prompt_tokens: usize,
+    /// 模型生成的 token 数量
+    completion_tokens: usize,
+    /// 本次请求消耗的总 token 数量（输入 + 输出）
+    total_tokens: usize,
+}
+
+
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::SDK;
+    use anyhow::Result;
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = ChatCompletionRequestBuilder::default()
@@ -208,10 +306,33 @@ mod tests {
             .unwrap();
 
         let json = serde_json::to_string(&request).unwrap();
-        println!("json: {}", json);
+        info!("json: {}", json);
         assert_eq!(json, r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"你好"},{"role":"user","content":"你是谁"}]}"#);
     }
 
+    #[tokio::test]
+    async fn simple_chat_completion_should_work() -> Result<()> {
+        let req = ChatCompletionRequestBuilder::default()
+        .model("ep-20240817170913-w9q57".to_string()) 
+        .messages(vec![
+            ChatCompletionMessage::System(SystemMessage {
+                content: "你好".to_string(),
+            }),
+            ChatCompletionMessage::User(UserMessage {
+                content: "你是谁".to_string(),
+            })
+        ])
+        .build()
+        .unwrap();
+        let res = SDK.chat_completion(req).await?;
+        //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
+        assert_eq!(res.object, "chat.completion");
+        //assert_eq!(res.choices.len(), 0);
+        let choice = &res.choices[0];
+        assert_eq!(choice.message.content.clone().unwrap(), "hello");
+        //assert_eq!(choice.message.tool_calls.len(), 0);
+        Ok(())
+    }
 }
 
 

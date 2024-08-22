@@ -5,6 +5,8 @@ use reqwest::{Client, RequestBuilder, Response};
 use std::time::Duration;
 use anyhow::{anyhow, Result};
 use api::*;
+use tracing::{error, info};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 const TIMEOUT: u64 = 60;
 
@@ -25,13 +27,14 @@ impl LlmSdk {
         Self {
             key,
             client: Client::new(),
-            base_url: "/api/v3/chat/completions".to_string(),
+            base_url: "http://ark.cn-beijing.volces.com/api/v3".to_string(),
         }
     }
 
     pub async fn chat_completion(&self, req: ChatCompletionRequest) -> Result<ChatCompletionResponse> {
         let req = self.prepare_request(req);
         let res = req.send_and_log().await?;
+        info!("chat completion response: {:?}", res);
         Ok(res.json::<ChatCompletionResponse>().await?)
     }
 
@@ -55,10 +58,25 @@ impl SendAndLog for RequestBuilder {
         let res = self.send().await?;
         let status = res.status();
         if status.is_client_error() || status.is_server_error() {
+            info!("status: {}", status);
             let text = res.text().await?;
-            //error!("API failed: {}", text);
+            error!("API failed: {}", text);
             return Err(anyhow!("API failed: {}", text));
         }
         Ok(res)
     }
+}
+
+
+#[cfg(test)]
+#[ctor::ctor]
+fn init() {
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .init();
+}
+
+#[cfg(test)]
+lazy_static::lazy_static! {
+    static ref SDK: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
 }

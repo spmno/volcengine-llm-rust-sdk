@@ -38,6 +38,15 @@ impl LlmSdk {
         Ok(res.json::<ChatCompletionResponse>().await?)
     }
 
+    pub async fn chat_completion_stream(&self, req: ChatCompletionRequest) -> Result<ChatCompletionChunkResponse> {
+        let req = self.prepare_request(req);
+        let mut res = req.send().await?;
+        while let Some(chunk) = res.chunk().await? {
+            info!("Chunk: {chunk:?}\n");
+        }
+        Ok(res.json::<ChatCompletionChunkResponse>().await?)
+    }
+
     fn prepare_request(&self, req: impl IntoRequest) -> RequestBuilder {
         let req = req.into_request(&self.base_url, self.client.clone());
         let req = if self.key.is_empty() {

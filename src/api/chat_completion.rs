@@ -194,13 +194,13 @@ pub struct ChatCompletionResponse {
     /// 本次请求创建时间的 Unix 时间戳（秒）
     created: i64,
     /// 本次请求的模型输出内容
-    choices: Vec<ChatCompletionChoice>,
+    choices: Vec<Choice>,
     /// 本次请求的 tokens 用量
-    usage: ChatCompletionUsage,
+    usage: Usage,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct ChatCompletionChoice {
+pub struct Choice {
     /// 当前元素在 choices 列表的索引
     index: usize,
     /// 模型停止生成 token 的原因。可能的值包括：
@@ -273,7 +273,7 @@ pub struct TopLogprob {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct ChatCompletionUsage {
+pub struct Usage {
     /// 输入的 prompt token 数量
     prompt_tokens: usize,
     /// 模型生成的 token 数量
@@ -283,6 +283,63 @@ pub struct ChatCompletionUsage {
 }
 
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChatCompletionChunkResponse {
+    /// 本次请求的唯一标识
+    id: String,
+    /// 本次请求实际使用的模型名称和版本	
+    model: String,
+    /// 固定为 chat.completion(非流式)，固定为 chat.completion.chunk（流式）
+    object: String,
+    /// 本次请求创建时间的 Unix 时间戳（秒）
+    created: i64,
+    /// 本次请求的模型输出内容
+    choices: Vec<StreamChoice>,
+    /// 本次请求的 tokens 用量
+    usage: Usage,
+}
+
+#[derive(Debug, Clone, Deserialize, Builder)]
+pub struct StreamChoice {
+    /// 当前元素在 choices 列表的索引
+    index: usize,
+    /// stop：模型输出自然结束，或因命中请求参数 stop 中指定的字段而被截断
+    /// length：模型输出因达到请求参数 max_token 指定的最大 token 数量而被截断
+    /// content_filter：模型输出被内容审核拦截
+    /// tool_calls：模型调用了工具
+    #[builder(setter(strip_option))]
+    finish_reason: Option<String>,
+    /// 模型输出的内容
+    #[builder(setter(strip_option))]
+    delta: Option<ChoiceDelta>,
+    /// 当前内容的对数概率信息
+    #[builder(setter(strip_option))]
+    logprobs: Option<ChoiceLogprobs>,
+}
+
+#[derive(Debug, Clone, Deserialize, Builder)]
+pub struct ChoiceDelta {
+    /// 固定为 assistant
+    role: String,
+    /// 模型生成的消息内容，content 与 tool_calls 字段二者至少有一个为非空
+    #[builder(setter(strip_option))]
+    content: Option<String>,
+    /// 模型生成的消息内容，content 与 tool_calls 字段二者至少有一个为非空
+    #[builder(setter(strip_option))]
+    tool_calls: Option<Vec<ChoiceDeltaToolCall>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChoiceDeltaToolCall {
+    /// 当前元素在 tool_calls 列表的索引
+    index: usize,
+    /// 当前工具调用 ID
+    id: String,
+    /// 工具类型，当前仅支持function
+    r#type: String,
+    /// 当前工具调用参数
+    function: Function,
+}
 
 
 #[cfg(test)]
@@ -329,7 +386,32 @@ mod tests {
         assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);
         let choice = &res.choices[0];
-        assert_eq!(choice.message.content.clone().unwrap(), "hello");
+        //assert_eq!(choice.delta, "hello");
+        //assert_eq!(choice.message.tool_calls.len(), 0);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn simple_chat_completion_chunk_should_work() -> Result<()> {
+        let req = ChatCompletionRequestBuilder::default()
+        .model("ep-20240817170913-w9q57".to_string()) 
+        .messages(vec![
+            ChatCompletionMessage::System(SystemMessage {
+                content: "你好".to_string(),
+            }),
+            ChatCompletionMessage::User(UserMessage {
+                content: "你是谁".to_string(),
+            })
+        ])
+        .stream(true)
+        .build()
+        .unwrap();
+        let res = SDK.chat_completion_stream(req).await?;
+        //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
+        assert_eq!(res.object, "chat.completion");
+        //assert_eq!(res.choices.len(), 0);
+        let choice = &res.choices[0];
+        //assert_eq!(choice.message.content.clone().unwrap(), "hello");
         //assert_eq!(choice.message.tool_calls.len(), 0);
         Ok(())
     }

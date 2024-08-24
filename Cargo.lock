@@ -622,6 +622,7 @@ name = "llm-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytes",
  "ctor",
  "derive_builder",
  "features",

@@ -7,6 +7,7 @@ use anyhow::{anyhow, Result};
 use api::*;
 use tracing::{error, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use bytes::Bytes;
 
 const TIMEOUT: u64 = 60;
 
@@ -38,13 +39,16 @@ impl LlmSdk {
         Ok(res.json::<ChatCompletionResponse>().await?)
     }
 
-    pub async fn chat_completion_stream(&self, req: ChatCompletionRequest) -> Result<ChatCompletionChunkResponse> {
+    pub async fn chat_completion_stream(&self, req: ChatCompletionRequest) -> Result<()> {
         let req = self.prepare_request(req);
         let mut res = req.send().await?;
+        info!("chat completion stream response: {:?}", res);
         while let Some(chunk) = res.chunk().await? {
             info!("Chunk: {chunk:?}\n");
         }
-        Ok(res.json::<ChatCompletionChunkResponse>().await?)
+        info!("Stream finished");
+        Err(anyhow!("API failed"))
+        //Ok(res.json::<ChatCompletionChunkResponse>().await?)
     }
 
     fn prepare_request(&self, req: impl IntoRequest) -> RequestBuilder {

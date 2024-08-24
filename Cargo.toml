@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+bytes = "1.7.1"
 derive_builder = "0.20.0"
 features = "0.10.0"
 full = "0.3.0"

@@ -20,7 +20,7 @@ pub struct LlmSdk {
 }
 
 pub trait IntoRequest {
-    fn into_request(self, base_url: &str, client: Client) -> RequestBuilder;
+    fn into_request(self, base_url: &str, client: &Client) -> RequestBuilder;
 }
 
 impl LlmSdk {
@@ -32,34 +32,41 @@ impl LlmSdk {
         }
     }
 
-    pub async fn chat_completion(&self, req: ChatCompletionRequest) -> Result<ChatCompletionResponse> {
-        let req = self.prepare_request(req);
-        let res = req.send_and_log().await?;
+    pub async fn chat_completion(&self, req: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+        let url = format!("{}/chat/completions", self.base_url);
+        info!("url:{}", url);
+        let request_build = self.client.post(url).json(req);
+        let request_build = request_build.bearer_auth(&self.key);
+        let request_build = request_build.timeout(Duration::from_secs(TIMEOUT));
+        
+        let res = request_build.send_and_log().await?;
         info!("chat completion response: {:?}", res);
         Ok(res.json::<ChatCompletionResponse>().await?)
     }
 
-    pub async fn chat_completion_stream(&self, req: ChatCompletionRequest) -> Result<()> {
-        let req = self.prepare_request(req);
-        let mut res = req.send().await?;
+    pub async fn chat_completion_stream(&self, req: &ChatCompletionRequest) -> Result<String> {
+        let url = format!("{}/chat/completions", self.base_url);
+        info!("url:{}", url);
+        let request_build = self.client.post(url).json(req);
+        let request_build = request_build.bearer_auth(&self.key);
+        let request_build = request_build.timeout(Duration::from_secs(TIMEOUT));
+        let mut res = request_build.send().await?;
         info!("chat completion stream response: {:?}", res);
         while let Some(chunk) = res.chunk().await? {
             info!("Chunk: {chunk:?}\n");
         }
-        info!("Stream finished");
-        Err(anyhow!("API failed"))
-        //Ok(res.json::<ChatCompletionChunkResponse>().await?)
+        Ok(String::from("chunk"))
     }
 
-    fn prepare_request(&self, req: impl IntoRequest) -> RequestBuilder {
-        let req = req.into_request(&self.base_url, self.client.clone());
-        let req = if self.key.is_empty() {
-            req
-        } else {
-            req.bearer_auth(&self.key)
-        };
-        req.timeout(Duration::from_secs(TIMEOUT))
-    }
+    //fn prepare_request(&self, req: &impl IntoRequest) -> &RequestBuilder {
+    //    let req = req.into_request(&self.base_url, &self.client);
+    //    let req = if self.key.is_empty() {
+    //        req
+    //    } else {
+    //        req.bearer_auth(&self.key)
+    //    };
+    //    &req.timeout(Duration::from_secs(TIMEOUT))
+    //}
 }
 
 trait SendAndLog {

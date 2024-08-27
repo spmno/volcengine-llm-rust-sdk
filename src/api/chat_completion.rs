@@ -173,7 +173,7 @@ pub struct ToolMessage {
 }
 
 impl IntoRequest for ChatCompletionRequest {
-    fn into_request(self, base_url: &str, client: Client) -> RequestBuilder {
+    fn into_request(self, base_url: &str, client: &Client) -> RequestBuilder {
         let url = format!("{}/chat/completions", base_url);
         info!("url:{}", url);
         client.post(url).json(&self)
@@ -381,11 +381,13 @@ mod tests {
         ])
         .build()
         .unwrap();
-        let res = SDK.chat_completion(req).await?;
+        let res = SDK.chat_completion(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);
         let choice = &res.choices[0];
+        assert_eq!(choice.message.content.clone().unwrap(), "hello");
+
         //assert_eq!(choice.delta, "hello");
         //assert_eq!(choice.message.tool_calls.len(), 0);
         Ok(())
@@ -406,8 +408,9 @@ mod tests {
         .stream(true)
         .build()
         .unwrap();
-        let res = SDK.chat_completion_stream(req).await?;
-        assert_eq!(res, ());
+        let hello = SDK.chat_completion_stream(&req).await?;
+        assert_eq!(hello, "hello");
+
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         //assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);

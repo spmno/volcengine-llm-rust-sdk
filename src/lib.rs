@@ -60,6 +60,18 @@ impl LlmSdk {
         Ok(res.chunk().await?)
     }
 
+    pub async fn vision_lite(&self, req: &VisionLiteRequest) -> Result<VisionLiteResponse> {
+        let url = format!("{}/chat/completions", self.base_url);
+        info!("url:{}", url);
+        let request_build = self.client.post(url)
+            .json(req)
+            .bearer_auth(&self.key)
+            .timeout(Duration::from_secs(TIMEOUT));
+        let res = request_build.send_and_log().await?;
+        info!("vision response: {:?}", res);
+        Ok(res.json::<VisionLiteResponse>().await?)
+    }
+
     //fn prepare_request(&self, req: &impl IntoRequest) -> &RequestBuilder {
     //    let req = req.into_request(&self.base_url, &self.client);
     //    let req = if self.key.is_empty() {

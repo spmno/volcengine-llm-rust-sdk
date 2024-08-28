@@ -418,8 +418,11 @@ mod tests {
         .stream(true)
         .build()
         .unwrap();
-        let hello = SDK.chat_completion_stream(&req).await?;
-        assert_eq!(hello, "hello");
+        //let hello = SDK.chat_completion_stream(&req).await?;
+        while let Some(chunk) = SDK.chat_completion_stream(&req).await? {
+            info!("Chunk: {chunk:?}\n");
+        }
+        assert_eq!("f", "hello");
 
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         //assert_eq!(res.object, "chat.completion");

@@ -104,7 +104,7 @@ pub struct StreamOptionsParam {
 
 
 
-
+#[allow(dead_code)]
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", tag = "role")]
 pub enum ChatCompletionMessage {
@@ -182,7 +182,7 @@ impl IntoRequest for ChatCompletionRequest {
 
 
 ////////////////////////////  Response  //////////////////////
-
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChatCompletionResponse {
     /// 本次请求的唯一标识
@@ -199,6 +199,7 @@ pub struct ChatCompletionResponse {
     usage: Usage,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Choice {
     /// 当前元素在 choices 列表的索引
@@ -215,6 +216,7 @@ pub struct Choice {
     logprobs: Option<ChoiceLogprobs>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Message {
     /// 固定为 assistant
@@ -225,6 +227,7 @@ pub struct Message {
     tool_calls: Option<Vec<MessageToolCall>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct MessageToolCall {
     /// 当前工具调用 ID
@@ -235,6 +238,7 @@ pub struct MessageToolCall {
     function: Function,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Function {
     /// 模型需要调用的函数名称
@@ -243,13 +247,14 @@ pub struct Function {
     arguments: String,
 }
 
-
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChoiceLogprobs {
     /// message列表中每个 content 元素中的 token 对数概率信息
     content: Vec<TokenLogprob>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct TokenLogprob {
     /// 当前 token
@@ -262,6 +267,7 @@ pub struct TokenLogprob {
     top_logprobs: Option<Vec<TopLogprob>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct TopLogprob {
     /// 当前 token
@@ -272,6 +278,7 @@ pub struct TopLogprob {
     logprob: f32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Usage {
     /// 输入的 prompt token 数量
@@ -282,7 +289,7 @@ pub struct Usage {
     total_tokens: usize,
 }
 
-
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChatCompletionChunkResponse {
     /// 本次请求的唯一标识
@@ -299,6 +306,7 @@ pub struct ChatCompletionChunkResponse {
     usage: Usage,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize, Builder)]
 pub struct StreamChoice {
     /// 当前元素在 choices 列表的索引
@@ -317,6 +325,7 @@ pub struct StreamChoice {
     logprobs: Option<ChoiceLogprobs>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize, Builder)]
 pub struct ChoiceDelta {
     /// 固定为 assistant
@@ -329,6 +338,7 @@ pub struct ChoiceDelta {
     tool_calls: Option<Vec<ChoiceDeltaToolCall>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChoiceDeltaToolCall {
     /// 当前元素在 tool_calls 列表的索引

@@ -81,9 +81,30 @@ pub struct SystemMessage {
 }
 
 #[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentType {
+    Text,
+    ImageUrl,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ImageUrlType {
+    url: String,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct ImageUrl {
+    r#type: ContentType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image_url: Option<ImageUrlType>,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct UserMessage { 
     /// 消息内容
-    content: String,
+    content: ImageUrl,
 }
 
 #[derive(Serialize, Clone, Debug)]

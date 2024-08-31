@@ -248,11 +248,16 @@ mod tests {
         let req = VisionLiteRequestBuilder::default()
         .model("ep-20240821165029-dcqm2".to_string()) 
         .messages(vec![
-            VisionLiteMessage::System(SystemMessage {
-                content: "你好".to_string(),
-            }),
             VisionLiteMessage::User(UserMessage {
-                content: vec![Content { r#type: ContentType::Text, text: Some(String::from("who are you?")), ..Default::default() }],
+                content: vec![Content { r#type: ContentType::Text,
+                                        text: Some(String::from("图中是什么?")), 
+                                        ..Default::default() }, 
+                                Content { r#type: ContentType::ImageUrl, 
+                                        image_url: Some(ImageUrlType { 
+                                            url: String::from("https://www.pitpat.com/wp-content/uploads/2020/06/Sunny-2048x1536.jpg")
+                                        }),
+                                        ..Default::default() 
+                                    }],
             })
         ])
         .build()
@@ -268,6 +273,7 @@ mod tests {
         //assert_eq!(choice.message.tool_calls.len(), 0);
         Ok(())
     }
+    
 /* 
     #[tokio::test]
     async fn simple_chat_completion_chunk_should_work() -> Result<()> {

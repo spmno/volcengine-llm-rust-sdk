@@ -1,7 +1,7 @@
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, default};
 use tracing::info;
 
 #[derive(Serialize, Clone, Debug, Builder)]
@@ -80,9 +80,10 @@ pub struct SystemMessage {
     content: String,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ContentType {
+    #[default]
     Text,
     ImageUrl,
 }
@@ -92,19 +93,19 @@ pub struct ImageUrlType {
     url: String,
 }
 
-#[derive(Serialize, Clone, Debug)]
-pub struct ImageUrl {
+#[derive(Serialize, Clone, Debug, Builder, Default)]
+pub struct Content {
     r#type: ContentType,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     image_url: Option<ImageUrlType>,
 }
 
 #[derive(Serialize, Clone, Debug)]
 pub struct UserMessage { 
     /// 消息内容
-    content: ImageUrl,
+    content: Vec<Content>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -227,7 +228,11 @@ mod tests {
                     content: "你好".to_string(),
                 }),
                 VisionLiteMessage::User(UserMessage {
-                    content: "你是谁".to_string(),
+                    content: vec![ Content {
+                        r#type: ContentType::Text,
+                        text: Some("who are you?".to_string()),
+                        ..Default::default()
+                    }],
                 })
             ])
             .build()
@@ -247,7 +252,7 @@ mod tests {
                 content: "你好".to_string(),
             }),
             VisionLiteMessage::User(UserMessage {
-                content: "你是谁".to_string(),
+                content: vec![Content { r#type: ContentType::Text, text: Some(String::from("who are you?")), ..Default::default() }],
             })
         ])
         .build()

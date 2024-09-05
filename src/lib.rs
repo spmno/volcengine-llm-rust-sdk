@@ -19,8 +19,9 @@ pub struct LlmSdk {
     pub(crate) client: Client
 }
 
-pub trait IntoRequest {
-    fn into_request(self, base_url: &str, client: &Client) -> RequestBuilder;
+pub trait MessageEvent {
+    fn on_message(&self, chunk: ChatCompletionChunkResponse);
+    fn on_end(&self);
 }
 
 impl LlmSdk {
@@ -44,7 +45,8 @@ impl LlmSdk {
         Ok(res.json::<ChatCompletionResponse>().await?)
     }
 
-    pub async fn chat_completion_stream(&self, req: &ChatCompletionRequest) -> Result<Option<Bytes>> {
+    pub async fn chat_completion_stream(&self, req: &ChatCompletionRequest,  event: &impl MessageEvent) -> Result<()>  {
+
         let url = format!("{}/chat/completions", self.base_url);
         info!("url:{}", url);
         let request_build = self.client.post(url)
@@ -53,11 +55,13 @@ impl LlmSdk {
             .timeout(Duration::from_secs(TIMEOUT));
         let mut res = request_build.send().await?;
         info!("chat completion stream response: {:?}", res);
-        //while let Some(chunk) = res.chunk().await? {
-        //    info!("Chunk: {chunk:?}\n");
-        //}
-        //Ok(String::from("chunk"))
-        Ok(res.chunk().await?)
+        while let Some(chunk) = res.chunk().await? {
+            let chunk = serde_json::from_slice(&chunk)?;
+            event.on_message(chunk);
+
+        }
+        event.on_end();
+        Ok(())
     }
 
     pub async fn vision_lite(&self, req: &VisionLiteRequest) -> Result<VisionLiteResponse> {

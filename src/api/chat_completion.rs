@@ -1,4 +1,4 @@
-use crate::IntoRequest;
+use crate::MessageEvent;
 use derive_builder::Builder;
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
@@ -171,15 +171,6 @@ pub struct ToolMessage {
     /// 此消息所回应的工具调用 ID，当 role 为 tool 时必填
     tool_call_id: String,
 }
-
-impl IntoRequest for ChatCompletionRequest {
-    fn into_request(self, base_url: &str, client: &Client) -> RequestBuilder {
-        let url = format!("{}/chat/completions", base_url);
-        info!("url:{}", url);
-        client.post(url).json(&self)
-    }
-}
-
 
 ////////////////////////////  Response  //////////////////////
 #[allow(dead_code)]
@@ -418,10 +409,21 @@ mod tests {
         .stream(true)
         .build()
         .unwrap();
-        //let hello = SDK.chat_completion_stream(&req).await?;
-        while let Some(chunk) = SDK.chat_completion_stream(&req).await? {
-            info!("Chunk: {chunk:?}\n");
+        struct MyMessageEvent {};
+        impl MessageEvent for MyMessageEvent {
+            fn on_message(&self, chunk: ChatCompletionChunkResponse) {
+                info!("Chunk: {chunk:?}\n");
+            }
+
+            fn on_end(&self) {
+                info!("end");
+            }
         }
+        SDK.chat_completion_stream(&req, &MyMessageEvent {}).await;
+        //let hello = SDK.chat_completion_stream(&req).await?;
+        //while let Some(chunk) = SDK.chat_completion_stream(&req).await? {
+        //    info!("Chunk: {chunk:?}\n");
+        //}
         assert_eq!("f", "hello");
 
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);

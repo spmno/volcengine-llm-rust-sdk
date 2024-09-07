@@ -1,13 +1,13 @@
 mod api;
 
+use anyhow::{anyhow, Result};
+use api::*;
+use bytes::Bytes;
 use derive_builder::Builder;
 use reqwest::{Client, RequestBuilder, Response};
 use std::time::Duration;
-use anyhow::{anyhow, Result};
-use api::*;
 use tracing::{error, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use bytes::Bytes;
 
 const TIMEOUT: u64 = 60;
 
@@ -16,11 +16,11 @@ pub struct LlmSdk {
     #[builder(setter(into), default = r#""/api/v3/chat/completions".into()"#)]
     pub(crate) base_url: String,
     pub(crate) key: String,
-    pub(crate) client: Client
+    pub(crate) client: Client,
 }
 
 pub trait MessageEvent {
-    fn on_message(&self, chunk: ChatCompletionChunkResponse);
+    fn on_message(&self, chat_completion: &ChatCompletionChunkResponse);
     fn on_end(&self);
 }
 
@@ -33,10 +33,15 @@ impl LlmSdk {
         }
     }
 
-    pub async fn chat_completion(&self, req: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+    pub async fn chat_completion(
+        &self,
+        req: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse> {
         let url = format!("{}/chat/completions", self.base_url);
         info!("url:{}", url);
-        let request_build = self.client.post(url)
+        let request_build = self
+            .client
+            .post(url)
             .json(req)
             .bearer_auth(&self.key)
             .timeout(Duration::from_secs(TIMEOUT));
@@ -45,20 +50,33 @@ impl LlmSdk {
         Ok(res.json::<ChatCompletionResponse>().await?)
     }
 
-    pub async fn chat_completion_stream(&self, req: &ChatCompletionRequest,  event: &impl MessageEvent) -> Result<()>  {
-
+    pub async fn chat_completion_stream(
+        &self,
+        req: &ChatCompletionRequest,
+        event: &impl MessageEvent,
+    ) -> Result<()> {
         let url = format!("{}/chat/completions", self.base_url);
         info!("url:{}", url);
-        let request_build = self.client.post(url)
+        let request_build = self
+            .client
+            .post(url)
             .json(req)
             .bearer_auth(&self.key)
             .timeout(Duration::from_secs(TIMEOUT));
         let mut res = request_build.send().await?;
         info!("chat completion stream response: {:?}", res);
         while let Some(chunk) = res.chunk().await? {
-            let chunk = serde_json::from_slice(&chunk)?;
-            event.on_message(chunk);
-
+            info!("chunk:{:?}", chunk);
+            let mut pos = 0;
+            for i in 0..chunk.len() {
+                if chunk.get(i).unwrap().eq(&123) {
+                    pos = i;
+                    break;
+                }
+            }
+            let chat_completion: ChatCompletionChunkResponse =
+                serde_json::from_slice(&chunk[pos..])?;
+            event.on_message(&chat_completion);
         }
         event.on_end();
         Ok(())
@@ -67,7 +85,9 @@ impl LlmSdk {
     pub async fn vision_lite(&self, req: &VisionLiteRequest) -> Result<VisionLiteResponse> {
         let url = format!("{}/chat/completions", self.base_url);
         info!("url:{}", url);
-        let request_build = self.client.post(url)
+        let request_build = self
+            .client
+            .post(url)
             .json(req)
             .bearer_auth(&self.key)
             .timeout(Duration::from_secs(TIMEOUT));
@@ -105,13 +125,10 @@ impl SendAndLog for RequestBuilder {
     }
 }
 
-
 #[cfg(test)]
 #[ctor::ctor]
 fn init() {
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .init();
+    tracing_subscriber::registry().with(fmt::layer()).init();
 }
 
 #[cfg(test)]

@@ -87,10 +87,7 @@ pub struct FunctionDefinition {
     description: String,
     /// 函数请求参数，以 JSON Schema 格式描述。具体格式请参考 JSON Schema 文档
     parameters: serde_json::Value,
-
 }
-
-
 
 #[derive(Serialize, Clone, Debug, Builder)]
 pub struct StreamOptionsParam {
@@ -101,8 +98,6 @@ pub struct StreamOptionsParam {
     #[serde(skip_serializing_if = "Option::is_none")]
     include_usage: Option<bool>,
 }
-
-
 
 #[allow(dead_code)]
 #[derive(Serialize, Clone, Debug)]
@@ -125,7 +120,7 @@ pub struct SystemMessage {
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct UserMessage { 
+pub struct UserMessage {
     /// 消息内容
     content: String,
 }
@@ -156,12 +151,11 @@ pub struct FunctionParam {
     arguments: String,
 }
 
-
 #[derive(Serialize, Clone, Debug, Default, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum ToolCallType {
     #[default]
-    Function
+    Function,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -178,7 +172,7 @@ pub struct ToolMessage {
 pub struct ChatCompletionResponse {
     /// 本次请求的唯一标识
     id: String,
-    /// 本次请求实际使用的模型名称和版本	
+    /// 本次请求实际使用的模型名称和版本
     model: String,
     /// 固定为 chat.completion(非流式)，固定为 chat.completion.chunk（流式）
     object: String,
@@ -187,7 +181,7 @@ pub struct ChatCompletionResponse {
     /// 本次请求的模型输出内容
     choices: Vec<Choice>,
     /// 本次请求的 tokens 用量
-    usage: Usage,
+    usage: Option<Usage>,
 }
 
 #[allow(dead_code)]
@@ -265,7 +259,7 @@ pub struct TopLogprob {
     token: String,
     /// 当前 token 的 UTF-8 值，格式为整数列表。当一个字符由多个 token 组成（表情符号或特殊字符等）时可以用于字符的编码和解码。如果 token 没有 UTF-8 值则为空。
     bytes: Vec<usize>,
-    /// 当前 token 的对数概率	
+    /// 当前 token 的对数概率
     logprob: f32,
 }
 
@@ -282,10 +276,17 @@ pub struct Usage {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
+pub struct ChatCompletionResponseWrapper {
+    /// 豆包返回多了一个data
+    data: ChatCompletionChunkResponse,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ChatCompletionChunkResponse {
     /// 本次请求的唯一标识
     id: String,
-    /// 本次请求实际使用的模型名称和版本	
+    /// 本次请求实际使用的模型名称和版本
     model: String,
     /// 固定为 chat.completion(非流式)，固定为 chat.completion.chunk（流式）
     object: String,
@@ -294,7 +295,7 @@ pub struct ChatCompletionChunkResponse {
     /// 本次请求的模型输出内容
     choices: Vec<StreamChoice>,
     /// 本次请求的 tokens 用量
-    usage: Usage,
+    usage: Option<Usage>,
 }
 
 #[allow(dead_code)]
@@ -342,7 +343,6 @@ pub struct ChoiceDeltaToolCall {
     function: Function,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -351,37 +351,40 @@ mod tests {
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = ChatCompletionRequestBuilder::default()
-            .model("ep-20240817170913-w9q57".to_string()) 
+            .model("ep-20240817170913-w9q57".to_string())
             .messages(vec![
                 ChatCompletionMessage::System(SystemMessage {
                     content: "你好".to_string(),
                 }),
                 ChatCompletionMessage::User(UserMessage {
                     content: "你是谁".to_string(),
-                })
+                }),
             ])
             .build()
             .unwrap();
 
         let json = serde_json::to_string(&request).unwrap();
         info!("json: {}", json);
-        assert_eq!(json, r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"你好"},{"role":"user","content":"你是谁"}]}"#);
+        assert_eq!(
+            json,
+            r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"你好"},{"role":"user","content":"你是谁"}]}"#
+        );
     }
 
     #[tokio::test]
     async fn simple_chat_completion_should_work() -> Result<()> {
         let req = ChatCompletionRequestBuilder::default()
-        .model("ep-20240817170913-w9q57".to_string()) 
-        .messages(vec![
-            ChatCompletionMessage::System(SystemMessage {
-                content: "你好".to_string(),
-            }),
-            ChatCompletionMessage::User(UserMessage {
-                content: "你是谁".to_string(),
-            })
-        ])
-        .build()
-        .unwrap();
+            .model("ep-20240817170913-w9q57".to_string())
+            .messages(vec![
+                ChatCompletionMessage::System(SystemMessage {
+                    content: "你好".to_string(),
+                }),
+                ChatCompletionMessage::User(UserMessage {
+                    content: "你是谁".to_string(),
+                }),
+            ])
+            .build()
+            .unwrap();
         let res = SDK.chat_completion(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");
@@ -397,29 +400,35 @@ mod tests {
     #[tokio::test]
     async fn simple_chat_completion_chunk_should_work() -> Result<()> {
         let req = ChatCompletionRequestBuilder::default()
-        .model("ep-20240817170913-w9q57".to_string()) 
-        .messages(vec![
-            ChatCompletionMessage::System(SystemMessage {
-                content: "你好".to_string(),
-            }),
-            ChatCompletionMessage::User(UserMessage {
-                content: "你是谁".to_string(),
-            })
-        ])
-        .stream(true)
-        .build()
-        .unwrap();
-        struct MyMessageEvent {};
+            .model("ep-20240817170913-w9q57".to_string())
+            .messages(vec![
+                ChatCompletionMessage::System(SystemMessage {
+                    content: "你好".to_string(),
+                }),
+                ChatCompletionMessage::User(UserMessage {
+                    content: "你是谁".to_string(),
+                }),
+            ])
+            .stream(true)
+            .build()
+            .unwrap();
+        struct MyMessageEvent {}
         impl MessageEvent for MyMessageEvent {
-            fn on_message(&self, chunk: ChatCompletionChunkResponse) {
-                info!("Chunk: {chunk:?}\n");
+            fn on_message(&self, chat_completion: &ChatCompletionChunkResponse) {
+                info!("Chunk: {:?}\n", chat_completion);
             }
 
             fn on_end(&self) {
                 info!("end");
             }
         }
-        SDK.chat_completion_stream(&req, &MyMessageEvent {}).await;
+        let result = SDK.chat_completion_stream(&req, &MyMessageEvent {}).await;
+        match result {
+            Ok(()) => (),
+            Err(error) => {
+                panic!("stream error: {:?}", error);
+            }
+        }
         //let hello = SDK.chat_completion_stream(&req).await?;
         //while let Some(chunk) = SDK.chat_completion_stream(&req).await? {
         //    info!("Chunk: {chunk:?}\n");
@@ -435,5 +444,3 @@ mod tests {
         Ok(())
     }
 }
-
-

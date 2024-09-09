@@ -10,6 +10,10 @@ use tracing::{error, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 const TIMEOUT: u64 = 60;
+const LINE_FEED: u8 = 10;
+const SEARCH_TAIL: usize = 10;
+const LINE_FEED_COUNT: usize = 2;
+const LEFT_SIGN: u8 = 123;
 
 #[derive(Debug, Clone, Builder)]
 pub struct LlmSdk {
@@ -67,9 +71,29 @@ impl LlmSdk {
         info!("chat completion stream response: {:?}", res);
         while let Some(chunk) = res.chunk().await? {
             info!("chunk:{:?}", chunk);
+            // 多帧的处理
+            let chunk_len = chunk.len();
+            // 让搜索少一点吧
+            let search_len = chunk_len / 2 + SEARCH_TAIL;
+            let mut line_count = 0;
+            let mut last_pos = 0;
+            for i in 0..search_len {
+                // 找出换行，查看后面是否还有数据
+                if chunk[i] == LINE_FEED {
+                    if i < chunk_len - LINE_FEED_COUNT {
+                        info!("multi frame: {},{}", i, chunk[i + LINE_FEED_COUNT]);
+                        last_pos = i;
+                        if (last_pos + 1) == i {
+                            line_count = line_count + 1;
+                        }
+                    }
+                }
+            }
+
+            //找到大括号，把前面的data:去掉
             let mut pos = 0;
             for i in 0..chunk.len() {
-                if chunk.get(i).unwrap().eq(&123) {
+                if chunk.get(i).unwrap().eq(&LEFT_SIGN) {
                     pos = i;
                     break;
                 }

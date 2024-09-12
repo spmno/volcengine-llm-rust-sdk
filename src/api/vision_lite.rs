@@ -248,6 +248,9 @@ mod tests {
         let req = VisionLiteRequestBuilder::default()
         .model("ep-20240821165029-dcqm2".to_string()) 
         .messages(vec![
+            VisionLiteMessage::System(SystemMessage{
+                content: String::from("你是一个识图大师，你能识别图片中的物体，并且可以详细的把它描述出来")
+            }),
             VisionLiteMessage::User(UserMessage {
                 content: vec![Content { r#type: ContentType::Text,
                                         text: Some(String::from("图中是什么?")), 
@@ -262,6 +265,7 @@ mod tests {
         ])
         .build()
         .unwrap();
+        info!("req_json:{:?}", serde_json::to_string(&req).unwrap());
         let res = SDK.vision_lite(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");

@@ -1,4 +1,3 @@
-
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, default};
@@ -90,22 +89,22 @@ pub enum ContentType {
 
 #[derive(Serialize, Clone, Debug)]
 pub struct ImageUrlType {
-    url: String,
+    pub url: String,
 }
 
 #[derive(Serialize, Clone, Debug, Builder, Default)]
 pub struct Content {
-    r#type: ContentType,
+    pub r#type: ContentType,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    text: Option<String>,
+    pub text: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    image_url: Option<ImageUrlType>,
+    pub image_url: Option<ImageUrlType>,
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct UserMessage { 
+pub struct UserMessage {
     /// 消息内容
-    content: Vec<Content>,
+    pub content: Vec<Content>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -124,49 +123,48 @@ pub struct StreamOptionsParam {
     include_usage: Option<bool>,
 }
 
-
 ////////////////////////////  Response  //////////////////////
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct VisionLiteResponse {
     /// 本次请求的唯一标识
-    id: String,
-    /// 本次请求实际使用的模型名称和版本	
-    model: String,
+    pub id: String,
+    /// 本次请求实际使用的模型名称和版本
+    pub model: String,
     /// 固定为 chat.completion(非流式)，固定为 chat.completion.chunk（流式）
-    object: String,
+    pub object: String,
     /// 本次请求创建时间的 Unix 时间戳（秒）
-    created: i64,
+    pub created: i64,
     /// 本次请求的模型输出内容
-    choices: Vec<Choice>,
+    pub choices: Vec<Choice>,
     /// 本次请求的 tokens 用量
-    usage: Usage,
+    pub usage: Usage,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Choice {
     /// 当前元素在 choices 列表的索引
-    index: usize,
+    pub index: usize,
     /// 模型停止生成 token 的原因。可能的值包括：
     /// stop：模型输出自然结束，或因命中请求参数 stop 中指定的字段而被截断
     /// length：模型输出因达到请求参数 max_token 指定的最大 token 数量而被截断
     /// content_filter：模型输出被内容审核拦截
     /// tool_calls：模型调用了工具
-    finish_reason: String,
+    pub finish_reason: String,
     /// 模型输出的内容
-    message: Message,
+    pub message: Message,
     /// 当前内容的对数概率信息
-    logprobs: Option<ChoiceLogprobs>,
+    pub logprobs: Option<ChoiceLogprobs>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Message {
     /// 固定为 assistant
-    role: String,
+    pub role: String,
     /// 模型生成的消息内容，content 与 tool_calls 字段二者至少有一个为非空
-    content: String,
+    pub content: String,
 }
 
 #[allow(dead_code)]
@@ -196,7 +194,7 @@ pub struct TopLogprob {
     token: String,
     /// 当前 token 的 UTF-8 值，格式为整数列表。当一个字符由多个 token 组成（表情符号或特殊字符等）时可以用于字符的编码和解码。如果 token 没有 UTF-8 值则为空。
     bytes: Vec<usize>,
-    /// 当前 token 的对数概率	
+    /// 当前 token 的对数概率
     logprob: f32,
 }
 
@@ -211,9 +209,6 @@ pub struct Usage {
     total_tokens: usize,
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -222,44 +217,47 @@ mod tests {
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = VisionLiteRequestBuilder::default()
-            .model("ep-20240821165029-dcqm2".to_string()) 
+            .model("ep-20240821165029-dcqm2".to_string())
             .messages(vec![
                 VisionLiteMessage::System(SystemMessage {
                     content: "你好".to_string(),
                 }),
                 VisionLiteMessage::User(UserMessage {
-                    content: vec![ Content {
+                    content: vec![Content {
                         r#type: ContentType::Text,
                         text: Some("who are you?".to_string()),
                         ..Default::default()
                     }],
-                })
+                }),
             ])
             .build()
             .unwrap();
 
         let json = serde_json::to_string(&request).unwrap();
         info!("json: {}", json);
-        assert_eq!(json, r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"你好"},{"role":"user","content":"你是谁"}]}"#);
+        assert_eq!(
+            json,
+            r#"{"model":"ep-20240817170913-w9q57","messages":[{"role":"system","content":"你好"},{"role":"user","content":"你是谁"}]}"#
+        );
     }
 
     #[tokio::test]
     async fn simple_lite_vision_should_work() -> Result<()> {
         let req = VisionLiteRequestBuilder::default()
-        .model("ep-20240821165029-dcqm2".to_string()) 
+        .model("ep-20240821165029-dcqm2".to_string())
         .messages(vec![
             VisionLiteMessage::System(SystemMessage{
                 content: String::from("你是一个识图大师，你能识别图片中的物体，并且可以详细的把它描述出来")
             }),
             VisionLiteMessage::User(UserMessage {
                 content: vec![Content { r#type: ContentType::Text,
-                                        text: Some(String::from("图中是什么?")), 
-                                        ..Default::default() }, 
-                                Content { r#type: ContentType::ImageUrl, 
-                                        image_url: Some(ImageUrlType { 
+                                        text: Some(String::from("图中是什么?")),
+                                        ..Default::default() },
+                                Content { r#type: ContentType::ImageUrl,
+                                        image_url: Some(ImageUrlType {
                                             url: String::from("https://www.pitpat.com/wp-content/uploads/2020/06/Sunny-2048x1536.jpg")
                                         }),
-                                        ..Default::default() 
+                                        ..Default::default()
                                     }],
             })
         ])
@@ -277,12 +275,12 @@ mod tests {
         //assert_eq!(choice.message.tool_calls.len(), 0);
         Ok(())
     }
-    
-/* 
+
+    /*
     #[tokio::test]
     async fn simple_chat_completion_chunk_should_work() -> Result<()> {
         let req = ChatCompletionRequestBuilder::default()
-        .model("ep-20240817170913-w9q57".to_string()) 
+        .model("ep-20240817170913-w9q57".to_string())
         .messages(vec![
             ChatCompletionMessage::System(SystemMessage {
                 content: "你好".to_string(),
@@ -310,4 +308,3 @@ mod tests {
     }
     */
 }
-

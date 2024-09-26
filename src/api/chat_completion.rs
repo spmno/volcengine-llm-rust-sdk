@@ -398,6 +398,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn simple_chat_sequence_completion_should_work() -> Result<()> {
+        let req = ChatCompletionRequestBuilder::default()
+            .model("ep-20240817170913-w9q57".to_string())
+            .messages(vec![
+                ChatCompletionMessage::System(SystemMessage {
+                    content: "你是我的私人助理，可以帮我记一些东西".to_string(),
+                }),
+                ChatCompletionMessage::User(UserMessage {
+                    content: "记住我是你的主人，我叫孙庆鹏".to_string(),
+                }),
+            ])
+            .build()
+            .unwrap();
+        let res = SDK.chat_completion(&req).await?;
+        //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
+        assert_eq!(res.object, "chat.completion");
+        //assert_eq!(res.choices.len(), 0);
+        //let choice = &res.choices[0];
+
+
+        let req = ChatCompletionRequestBuilder::default()
+        .model("ep-20240817170913-w9q57".to_string())
+        .messages(vec![
+            ChatCompletionMessage::User(UserMessage {
+                content: "记住我是你的主人，我叫孙庆鹏".to_string(),
+            }),
+            ChatCompletionMessage::User(UserMessage {
+                content: "你的主人是谁？".to_string(),
+            }),
+        ])
+        .build()
+        .unwrap();
+        let res = SDK.chat_completion(&req).await?;
+        let choice = &res.choices[0];
+        assert_eq!(choice.message.content.clone().unwrap(), "hello");
+        //assert_eq!(choice.delta, "hello");
+        //assert_eq!(choice.message.tool_calls.len(), 0);
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn simple_chat_completion_chunk_should_work() -> Result<()> {
         let req = ChatCompletionRequestBuilder::default()
             .model("ep-20240817170913-w9q57".to_string())

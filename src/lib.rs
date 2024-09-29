@@ -9,7 +9,7 @@ use std::time::Duration;
 use tracing::{error, info};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-const TIMEOUT: u64 = 60;
+const TIMEOUT: u64 = 120;
 const LINE_FEED: u8 = 10;
 const SEARCH_TAIL: usize = 10;
 const LINE_FEED_COUNT: usize = 2;

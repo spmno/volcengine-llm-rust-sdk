@@ -1,7 +1,6 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, default};
-use tracing::info;
+use std::collections::HashMap;
 
 #[derive(Serialize, Clone, Debug, Builder)]
 pub struct VisionLiteRequest {
@@ -214,6 +213,7 @@ mod tests {
     use super::*;
     use crate::SDK;
     use anyhow::Result;
+    use tracing::info;
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = VisionLiteRequestBuilder::default()

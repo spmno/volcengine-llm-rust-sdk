@@ -1,6 +1,5 @@
 use crate::MessageEvent;
 use derive_builder::Builder;
-use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::info;

@@ -118,15 +118,20 @@ impl LlmSdk {
         Ok(res.json::<VisionLiteResponse>().await?)
     }
 
-    //fn prepare_request(&self, req: &impl IntoRequest) -> &RequestBuilder {
-    //    let req = req.into_request(&self.base_url, &self.client);
-    //    let req = if self.key.is_empty() {
-    //        req
-    //    } else {
-    //        req.bearer_auth(&self.key)
-    //    };
-    //    &req.timeout(Duration::from_secs(TIMEOUT))
-    //}
+
+    pub async fn embeddings(&self, req: &EmbeddingsRequest) -> Result<EmbeddingsResponse> {
+        let url = format!("{}/embeddings", self.base_url);
+        info!("url:{}", url);
+        let client = Client::new();
+        let request_build = client
+        .post(url)
+        .json(req)
+        .bearer_auth(&self.key)
+        .timeout(Duration::from_secs(TIMEOUT));
+        let res = request_build.send_and_log().await?;
+        info!("embedding response:{:?}", res);
+        Ok(res.json::<EmbeddingsResponse>().await?)
+    }
 }
 
 trait SendAndLog {

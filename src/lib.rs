@@ -124,11 +124,13 @@ impl LlmSdk {
         info!("url:{}", url);
         let client = Client::new();
         let request_build = client
-        .post(url)
-        .json(req)
-        .bearer_auth(&self.key)
-        .timeout(Duration::from_secs(TIMEOUT));
+            .post(url)
+            .json(req)
+            .bearer_auth(&self.key)
+            .timeout(Duration::from_secs(TIMEOUT));
         let res = request_build.send_and_log().await?;
+        // for test
+        //let result_str: String = res.text().await.unwrap();
         info!("embedding response:{:?}", res);
         Ok(res.json::<EmbeddingsResponse>().await?)
     }

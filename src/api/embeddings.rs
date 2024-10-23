@@ -12,8 +12,10 @@ pub struct EmbeddingsRequest {
     /// 3. 单条文本以 utf-8 编码，长度不超过 100,000 字节
     /// 4. 文本数量不超过 256 条
     input: Vec<String>,
-    /// embedding 返回的格式，当前支持 float或base64
-    encoding_format: String
+    /// embedding 返回的格式，当前支持 float或base64，默认为float
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    encoding_format: Option<String>
 }
 
 #[derive(Deserialize, Clone, Debug, Builder)]
@@ -23,11 +25,11 @@ pub struct EmbeddingsResponse {
     /// 本次请求实际使用的模型名称和版本
     model: String,
     /// 本次请求创建时间的 Unix 时间戳（秒）
-    created: u32,
+    created: usize,
     /// 固定为 list
     object: String,
     /// 本次请求的算法输出内容
-    data: Embedding,
+    data: Vec<Embedding>,
     /// 本次请求的 tokens 用量
     usage: Usage
 }
@@ -35,7 +37,7 @@ pub struct EmbeddingsResponse {
 #[derive(Deserialize, Clone, Debug, Builder)]
 pub struct Embedding {
     /// 向量的序号，与请求参数 input 列表中的内容顺序对应
-    index: u32,
+    index: usize,
     /// 对应内容的向量化结果,
     embedding: Vec<f32>,
     /// 固定为 embedding
@@ -48,4 +50,29 @@ pub struct Usage {
     prompt_tokens: u32,
     /// 本次请求消耗的总 token 数量（输入 + 输出)
     total_tokens: u32
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SDK;
+    use anyhow::Result;
+    use tracing::info;
+    #[tokio::test]
+    async fn embddings_request_serialize_should_work() {
+        let request = EmbeddingsRequestBuilder::default()
+            .model("ep-20241023154013-pzht4".to_string())
+            .input(vec![String::from("天很蓝"), String::from("海很深")])
+            .build()
+            .unwrap();
+
+        let json = serde_json::to_string(&request).unwrap();
+        info!("json: {}", json);
+        let resp = SDK.embeddings(&request).await.unwrap();
+
+        assert_eq!(resp.data[0].object, "embedding");
+        assert_eq!(resp.data[0].index, 1);
+    }
+
 }

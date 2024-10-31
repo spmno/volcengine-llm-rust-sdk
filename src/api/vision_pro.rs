@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Clone, Debug, Builder)]
-pub struct VisionLiteRequest {
+pub struct VisionProRequest {
     /// 以 endpoint_id 索引对应的模型接入点
     model: String,
     /// 本次对话的消息列表，包含用户输入的最后一条消息
     #[builder(setter(into))]
-    messages: Vec<VisionLiteMessage>,
+    messages: Vec<VisionProMessage>,
     /// 响应内容是否流式返回
     /// false：模型生成完所有内容后一次性返回结果
     /// true：按 SSE 协议逐块返回模型生成内容，并以一条 data: [DONE] 消息结束
@@ -63,7 +63,7 @@ pub struct VisionLiteRequest {
 #[allow(dead_code)]
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", tag = "role")]
-pub enum VisionLiteMessage {
+pub enum VisionProMessage {
     /// System Message 系统消息
     System(SystemMessage),
     /// User Message 用户消息
@@ -125,7 +125,7 @@ pub struct StreamOptionsParam {
 ////////////////////////////  Response  //////////////////////
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
-pub struct VisionLiteResponse {
+pub struct VisionProResponse {
     /// 本次请求的唯一标识
     pub id: String,
     /// 本次请求实际使用的模型名称和版本
@@ -216,13 +216,13 @@ mod tests {
     use tracing::info;
     #[test]
     fn chat_completion_request_serialize_should_work() {
-        let request = VisionLiteRequestBuilder::default()
+        let request = VisionProRequestBuilder::default()
             .model("ep-20240821165029-dcqm2".to_string())
             .messages(vec![
-                VisionLiteMessage::System(SystemMessage {
+                VisionProMessage::System(SystemMessage {
                     content: "你好".to_string(),
                 }),
-                VisionLiteMessage::User(UserMessage {
+                VisionProMessage::User(UserMessage {
                     content: vec![Content {
                         r#type: ContentType::Text,
                         text: Some("who are you?".to_string()),
@@ -242,21 +242,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn simple_lite_vision_should_work() -> Result<()> {
-        let req = VisionLiteRequestBuilder::default()
+    async fn simple_pro_vision_should_work() -> Result<()> {
+        let req = VisionProRequestBuilder::default()
         //.model("ep-20240821165029-dcqm2".to_string())
         .model("ep-20241030183147-ppfsl".to_string())
         .messages(vec![
-            VisionLiteMessage::System(SystemMessage{
+            VisionProMessage::System(SystemMessage{
                 content: String::from("你是一个识图大师，你能识别图片中的物体，并且可以详细的把它描述出来")
             }),
-            VisionLiteMessage::User(UserMessage {
+            VisionProMessage::User(UserMessage {
                 content: vec![Content { r#type: ContentType::Text,
                                         text: Some(String::from("图中是什么?")),
                                         ..Default::default() },
                                 Content { r#type: ContentType::ImageUrl,
                                         image_url: Some(ImageUrlType {
-                                            url: String::from("https://www.pitpat.com/wp-content/uploads/2020/06/Sunny-2048x1536.jpg")
+                                            url: String::from("https://ark-project.tos-cn-beijing.volces.com/images/view.jpeg")
                                         }),
                                         ..Default::default()
                                     }],
@@ -265,7 +265,7 @@ mod tests {
         .build()
         .unwrap();
         info!("req_json:{:?}", serde_json::to_string(&req).unwrap());
-        let res = SDK.vision_lite(&req).await?;
+        let res = SDK.vision_pro(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);
@@ -277,35 +277,4 @@ mod tests {
         Ok(())
     }
 
-    /*
-    #[tokio::test]
-    async fn simple_chat_completion_chunk_should_work() -> Result<()> {
-        let req = ChatCompletionRequestBuilder::default()
-        .model("ep-20240817170913-w9q57".to_string())
-        .messages(vec![
-            ChatCompletionMessage::System(SystemMessage {
-                content: "你好".to_string(),
-            }),
-            ChatCompletionMessage::User(UserMessage {
-                content: "你是谁".to_string(),
-            })
-        ])
-        .stream(true)
-        .build()
-        .unwrap();
-        //let hello = SDK.chat_completion_stream(&req).await?;
-        while let Some(chunk) = SDK.chat_completion_stream(&req).await? {
-            info!("Chunk: {chunk:?}\n");
-        }
-        assert_eq!("f", "hello");
-
-        //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
-        //assert_eq!(res.object, "chat.completion");
-        //assert_eq!(res.choices.len(), 0);
-        //let choice = &res.choices[0];
-        //assert_eq!(choice.message.content.clone().unwrap(), "hello");
-        //assert_eq!(choice.message.tool_calls.len(), 0);
-        Ok(())
-    }
-    */
 }

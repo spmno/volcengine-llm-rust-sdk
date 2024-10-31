@@ -114,8 +114,23 @@ impl LlmSdk {
             .bearer_auth(&self.key)
             .timeout(Duration::from_secs(TIMEOUT));
         let res = request_build.send_and_log().await?;
-        info!("vision response: {:?}", res);
+        info!("vision lite response: {:?}", res);
         Ok(res.json::<VisionLiteResponse>().await?)
+    }
+
+    pub async fn vision_pro(&self, req: &VisionProRequest) -> Result<VisionProResponse> {
+        let url = format!("{}/chat/completions", self.base_url);
+        info!("url:{}", url);
+        let client = Client::new();
+        let request_build = client
+            .post(url)
+            .json(req)
+            .bearer_auth(&self.key)
+            .header("x-ark-beta-vision", "true")
+            .timeout(Duration::from_secs(TIMEOUT));
+        let res = request_build.send_and_log().await?;
+        info!("vision pro response: {:?}", res);
+        Ok(res.json::<VisionProResponse>().await?)
     }
 
 

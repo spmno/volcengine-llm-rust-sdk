@@ -1,8 +1,7 @@
-use crate::MessageEvent;
+
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing::info;
 /// https://www.volcengine.com/docs/82379/1298454#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84
 
 #[derive(Serialize, Clone, Debug, Builder)]
@@ -347,6 +346,7 @@ mod tests {
     use super::*;
     use crate::SDK;
     use anyhow::Result;
+    use crate::MessageEvent;
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = ChatCompletionRequestBuilder::default()

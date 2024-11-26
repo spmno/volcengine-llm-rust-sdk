@@ -2,12 +2,14 @@ pub mod api;
 
 use anyhow::{anyhow, Result};
 use api::*;
-use bytes::Bytes;
 use derive_builder::Builder;
 use reqwest::{Client, RequestBuilder, Response};
 use std::time::Duration;
 use tracing::{error, info};
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use chat_completion::{ChatCompletionChunkResponse, ChatCompletionRequest, ChatCompletionResponse};
+use vision_lite::{VisionLiteRequest, VisionLiteResponse};
+use vision_pro::{VisionProRequest, VisionProResponse};
+use embeddings::{EmbeddingsRequest, EmbeddingsResponse};
 
 const TIMEOUT: u64 = 120;
 const LINE_FEED: u8 = 10;
@@ -74,13 +76,13 @@ impl LlmSdk {
             // 让搜索少一点吧
             let search_len = chunk_len / 2 + SEARCH_TAIL;
             let mut line_count = 0;
-            let mut last_pos = 0;
+            //let mut last_pos = 0;
             for i in 0..search_len {
                 // 找出换行，查看后面是否还有数据
                 if chunk[i] == LINE_FEED {
                     if i < chunk_len - LINE_FEED_COUNT {
                         info!("multi frame: {},{}", i, chunk[i + LINE_FEED_COUNT]);
-                        last_pos = i;
+                        let last_pos = i;
                         if (last_pos + 1) == i {
                             line_count = line_count + 1;
                         }
@@ -169,13 +171,19 @@ impl SendAndLog for RequestBuilder {
     }
 }
 
-#[cfg(test)]
-#[ctor::ctor]
-fn init() {
-    tracing_subscriber::registry().with(fmt::layer()).init();
-}
 
 #[cfg(test)]
-lazy_static::lazy_static! {
-    static ref SDK: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+mod tests {
+    use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
+    
+    #[ctor::ctor]
+    fn init() {
+        tracing_subscriber::registry().with(fmt::layer()).init();
+    }
+
+    lazy_static::lazy_static! {
+        static ref SDK: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+    }
 }
+
+

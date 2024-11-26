@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
+#[allow(dead_code)]
 #[derive(Serialize, Clone, Debug, Builder)]
 pub struct EmbeddingsRequest {
     /// 您创建的推理接入点 ID, ep-202406040*****-*****
@@ -18,6 +18,7 @@ pub struct EmbeddingsRequest {
     encoding_format: Option<String>
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Clone, Debug, Builder)]
 pub struct EmbeddingsResponse {
     /// 本次请求的唯一标识
@@ -34,6 +35,7 @@ pub struct EmbeddingsResponse {
     usage: Usage
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Clone, Debug, Builder)]
 pub struct Embedding {
     /// 向量的序号，与请求参数 input 列表中的内容顺序对应
@@ -44,6 +46,7 @@ pub struct Embedding {
     object: String
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Clone, Debug, Builder)]
 pub struct Usage {
     /// 输入的 prompt token 数量
@@ -57,8 +60,8 @@ pub struct Usage {
 mod tests {
     use super::*;
     use crate::SDK;
-    use anyhow::Result;
     use tracing::info;
+    use std::collections::HashMap;
     #[tokio::test]
     async fn embddings_request_serialize_should_work() {
         let request = EmbeddingsRequestBuilder::default()

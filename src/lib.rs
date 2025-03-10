@@ -180,10 +180,6 @@ mod tests {
     fn init() {
         tracing_subscriber::registry().with(fmt::layer()).init();
     }
-
-    lazy_static::lazy_static! {
-        static ref SDK: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
-    }
 }
 
 

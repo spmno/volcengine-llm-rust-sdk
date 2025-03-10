@@ -211,9 +211,9 @@ pub struct Usage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SDK;
     use anyhow::Result;
     use tracing::info;
+    use crate::LlmSdk;
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = VisionLiteRequestBuilder::default()
@@ -265,7 +265,8 @@ mod tests {
         .build()
         .unwrap();
         info!("req_json:{:?}", serde_json::to_string(&req).unwrap());
-        let res = SDK.vision_lite(&req).await?;
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let res = sdk.vision_lite(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);

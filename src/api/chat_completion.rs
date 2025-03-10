@@ -344,9 +344,10 @@ pub struct ChoiceDeltaToolCall {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SDK;
     use anyhow::Result;
     use crate::MessageEvent;
+    use tracing::info;
+    use crate::LlmSdk;
     #[test]
     fn chat_completion_request_serialize_should_work() {
         let request = ChatCompletionRequestBuilder::default()
@@ -384,7 +385,8 @@ mod tests {
             ])
             .build()
             .unwrap();
-        let res = SDK.chat_completion(&req).await?;
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let res = sdk.chat_completion(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);
@@ -410,7 +412,8 @@ mod tests {
             ])
             .build()
             .unwrap();
-        let res = SDK.chat_completion(&req).await?;
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let res = sdk.chat_completion(&req).await?;
         //assert_eq!(res.model, ChatCompleteModel::Gpt3Turbo);
         assert_eq!(res.object, "chat.completion");
         //assert_eq!(res.choices.len(), 0);
@@ -429,7 +432,8 @@ mod tests {
         ])
         .build()
         .unwrap();
-        let res = SDK.chat_completion(&req).await?;
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let res = sdk.chat_completion(&req).await?;
         let choice = &res.choices[0];
         assert_eq!(choice.message.content.clone().unwrap(), "hello");
         //assert_eq!(choice.delta, "hello");
@@ -462,7 +466,8 @@ mod tests {
                 info!("end");
             }
         }
-        let result = SDK.chat_completion_stream(&req, &MyMessageEvent {}).await;
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let result = sdk.chat_completion_stream(&req, &MyMessageEvent {}).await;
         match result {
             Ok(()) => (),
             Err(error) => {

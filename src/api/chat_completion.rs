@@ -69,7 +69,7 @@ pub struct ChatCompletionRequest {
     tools: Option<Vec<ToolParam>>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Builder)]
 pub struct ToolParam {
     /// 工具类型，当前仅支持 function
     name: String,
@@ -77,14 +77,18 @@ pub struct ToolParam {
     function: FunctionDefinition,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Builder)]
 pub struct FunctionDefinition {
     /// 函数的名称, 比如：get_current_weather
     name: String,
     /// 对函数用途的描述，供模型判断何时以及如何调用该工具函数
-    description: String,
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
     /// 函数请求参数，以 JSON Schema 格式描述。具体格式请参考 JSON Schema 文档
-    parameters: serde_json::Value,
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parameters: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Clone, Debug, Builder)]
@@ -397,6 +401,44 @@ mod tests {
         //assert_eq!(choice.message.tool_calls.len(), 0);
         Ok(())
     }
+
+    #[tokio::test]
+    async fn simple_chat_function_should_work() -> Result<()> {
+        let req = ChatCompletionRequestBuilder::default()
+            .model("ep-20250310183032-lljzt".to_string())
+            .messages(vec![
+                ChatCompletionMessage::System(SystemMessage {
+                    content: "你好".to_string(),
+                }),
+                ChatCompletionMessage::User(UserMessage {
+                    content: "打开空调".to_string(),
+                }),
+            ])
+            .tools(vec![
+               {
+                   ToolParam {
+                       name: "open_aircondition".to_string(),
+                       function: FunctionDefinition {
+                           name: "open_aircondition".to_string(),
+                           description: Some("打开空调".to_string()),
+                           parameters: None,
+                       } 
+                   } 
+               } 
+            ])
+            .build()
+            .unwrap();
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let res = sdk.chat_completion(&req).await?;
+        assert_eq!(res.object, "chat.completion");
+        let choice = &res.choices[0];
+        assert_eq!(choice.message.content.clone().unwrap(), "hello");
+
+        //assert_eq!(choice.delta, "hello");
+        //assert_eq!(choice.message.tool_calls.len(), 0);
+        Ok(())
+    }
+
 
     #[tokio::test]
     async fn simple_chat_sequence_completion_should_work() -> Result<()> {

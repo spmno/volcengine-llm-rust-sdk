@@ -72,7 +72,7 @@ pub struct ChatCompletionRequest {
 #[derive(Serialize, Clone, Debug, Builder)]
 pub struct ToolParam {
     /// 工具类型，当前仅支持 function
-    name: String,
+    r#type: String,
     /// 模型可以调用的工具列表。
     function: FunctionDefinition,
 }
@@ -417,7 +417,7 @@ mod tests {
             .tools(vec![
                {
                    ToolParam {
-                       name: "open_aircondition".to_string(),
+                       r#type: "function".to_string(),
                        function: FunctionDefinition {
                            name: "open_aircondition".to_string(),
                            description: Some("打开空调".to_string()),
@@ -428,7 +428,7 @@ mod tests {
             ])
             .build()
             .unwrap();
-        let sdk: LlmSdk = LlmSdk::new(std::env::var("DOUBAO_API_KEY").unwrap());
+        let sdk: LlmSdk = LlmSdk::new(std::env::var("VOLC_API_KEY").unwrap());
         let res = sdk.chat_completion(&req).await?;
         assert_eq!(res.object, "chat.completion");
         let choice = &res.choices[0];

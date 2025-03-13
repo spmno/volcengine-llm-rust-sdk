@@ -80,15 +80,15 @@ pub struct ToolParam {
 #[derive(Serialize, Clone, Debug, Builder)]
 pub struct FunctionDefinition {
     /// 函数的名称, 比如：get_current_weather
-    name: String,
+    pub name: String,
     /// 对函数用途的描述，供模型判断何时以及如何调用该工具函数
     #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
+    pub description: Option<String>,
     /// 函数请求参数，以 JSON Schema 格式描述。具体格式请参考 JSON Schema 文档
     #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
-    parameters: Option<serde_json::Value>,
+    pub parameters: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Clone, Debug, Builder)]

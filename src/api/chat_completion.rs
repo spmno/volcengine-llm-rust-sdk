@@ -72,9 +72,9 @@ pub struct ChatCompletionRequest {
 #[derive(Serialize, Clone, Debug, Builder)]
 pub struct ToolParam {
     /// 工具类型，当前仅支持 function
-    r#type: String,
+    pub r#type: String,
     /// 模型可以调用的工具列表。
-    function: FunctionDefinition,
+    pub function: FunctionDefinition,
 }
 
 #[derive(Serialize, Clone, Debug, Builder)]

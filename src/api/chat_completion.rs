@@ -269,11 +269,11 @@ pub struct TopLogprob {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Usage {
     /// 输入的 prompt token 数量
-    prompt_tokens: usize,
+    pub prompt_tokens: usize,
     /// 模型生成的 token 数量
-    completion_tokens: usize,
+    pub completion_tokens: usize,
     /// 本次请求消耗的总 token 数量（输入 + 输出）
-    total_tokens: usize,
+    pub total_tokens: usize,
 }
 
 #[allow(dead_code)]

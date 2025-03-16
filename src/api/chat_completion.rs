@@ -218,20 +218,20 @@ pub struct Message {
 #[derive(Debug, Clone, Deserialize)]
 pub struct MessageToolCall {
     /// 当前工具调用 ID
-    id: String,
+    pub id: String,
     /// 工具类型，当前仅支持function
-    r#type: String,
+    pub r#type: String,
     /// 当前工具调用参数
-    function: Function,
+    pub function: Function,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Function {
     /// 模型需要调用的函数名称
-    name: String,
+    pub name: String,
     /// 模型生成的用于调用函数的参数，JSON 格式。请注意，模型并不总是生成有效的 JSON，并且可能会虚构出一些您的函数参数规范中未定义的参数。在调用函数之前，请在您的代码中验证这些参数是否有效。
-    arguments: String,
+    pub arguments: String,
 }
 
 #[allow(dead_code)]
